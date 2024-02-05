@@ -7,10 +7,23 @@ import SimpleLightbox from "simplelightbox";
 // Додатковий імпорт стилів
 import "simplelightbox/dist/simple-lightbox.min.css";
 
-
 const API_KEY = '42176709-03057e91c34187fd30d01f158';
 
+function showLoader() {
+  const loader = document.createElement('div');
+  loader.className = 'loader';
+  imageContainer.appendChild(loader);
+}
+
+function hideLoader() {
+  const loader = imageContainer.querySelector('.loader');
+  if (loader) {
+    loader.remove();
+  }
+}
+
 function performSearch(searchQuery) {
+    showLoader();
     const imageType = 'photo';
     const orientation = 'horizontal';
     const safeSearch = true;
@@ -32,17 +45,23 @@ function performSearch(searchQuery) {
             return response.json();
         })
         .then(data => {
+            hideLoader();
             const imageContainer = document.getElementById('imageContainer');
             imageContainer.innerHTML = '';
 
             if (parseInt(data.totalHits) > 0) {
                 data.hits.forEach(hit => {
-                    const cardContainer = document.createElement('div');
+                    const cardContainer = document.createElement('li');
                     cardContainer.className = 'image-card';
 
                     const imgElement = document.createElement('img');
                     imgElement.src = hit.webformatURL;
                     imgElement.alt = hit.tags;
+
+                    
+                    const galleryLink = document.createElement('a');
+                    galleryLink.href = hit.largeImageURL;
+                    galleryLink.appendChild(imgElement);
 
                     const detailsContainer = document.createElement('div');
                     detailsContainer.className = 'image-details';
@@ -64,19 +83,24 @@ function performSearch(searchQuery) {
                     detailsContainer.appendChild(commentsElement);
                     detailsContainer.appendChild(downloadsElement);
 
-                    cardContainer.appendChild(imgElement);
+                    cardContainer.appendChild(galleryLink);
                     cardContainer.appendChild(detailsContainer);
 
                     imageContainer.appendChild(cardContainer);
                 });
+
+              
+                let lightbox = new SimpleLightbox('.image-card a', { captionsData: "alt",}); 
+                lightbox.refresh();
             } else {
-                iziToast.error({
-                    message: 'Sorry, there are no images matching your search query. Please try again!',
-                    position: 'topRight',
-                });
+         iziToast.error({
+                message: 'Please enter a valid search query.',
+                position: 'topRight',
+            });
             }
         })
         .catch(error => {
+            hideLoader();
             console.error('Error during fetch:', error.message);
         });
 }
